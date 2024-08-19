@@ -85,11 +85,6 @@
         const analytics = getAnalytics(app);
 
         const codeEditor = document.getElementById('code-editor');
-        const saveButton = document.getElementById('save-button');
-        const copyButton = document.getElementById('copy-button');
-
-        // Unique note ID for this example
-        const noteId = 'uniqueNoteId'; // Replace this with a unique ID generation method if needed
 
         // Initialize CodeMirror editor
         const editor = CodeMirror.fromTextArea(codeEditor, {
@@ -98,8 +93,11 @@
             theme: 'default'
         });
 
+        // Unique note ID for this example
+        const noteId = 'uniqueNoteId'; // Replace this with a unique ID generation method if needed
+
         // Function to save data to Firebase
-        saveButton.addEventListener('click', () => {
+        document.getElementById('save-button').addEventListener('click', () => {
             const content = editor.getValue();
             set(ref(database, 'notes/' + noteId), {
                 content: content
@@ -111,7 +109,7 @@
         });
 
         // Function to copy content to clipboard
-        copyButton.addEventListener('click', () => {
+        document.getElementById('copy-button').addEventListener('click', () => {
             navigator.clipboard.writeText(editor.getValue()).then(() => {
                 alert('Note copied to clipboard!');
             }).catch((error) => {
@@ -129,13 +127,23 @@
                 const newContent = data.content || '';
                 if (editor.getValue() !== newContent) {
                     editor.setValue(newContent); // Update CodeMirror editor with new content
+
+                    // Attempt to copy to clipboard
+                    if (document.visibilityState === 'visible') {
+                        navigator.clipboard.writeText(newContent).then(() => {
+                            console.log('Note copied to clipboard automatically!');
+                        }).catch((error) => {
+                            console.error('Error copying note: ', error);
+                        });
+                    } else {
+                        console.log('Page is not visible, clipboard update not attempted.');
+                    }
                 }
             }
         });
 
         // Sync CodeMirror with textarea
         editor.on('change', () => {
-            // Update the hidden textarea value (optional)
             document.getElementById('code-editor').value = editor.getValue();
         });
     </script>

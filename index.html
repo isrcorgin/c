@@ -64,7 +64,7 @@
     <!-- Import Firebase SDKs with module type -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js';
-        import { getDatabase, ref, set, get } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js';
+        import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js';
         import { getAnalytics } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics.js';
 
         // Firebase configuration
@@ -91,6 +91,13 @@
         // Unique note ID for this example
         const noteId = 'uniqueNoteId'; // Replace this with a unique ID generation method if needed
 
+        // Initialize CodeMirror editor
+        const editor = CodeMirror.fromTextArea(codeEditor, {
+            lineNumbers: true,
+            mode: 'javascript',
+            theme: 'default'
+        });
+
         // Function to save data to Firebase
         saveButton.addEventListener('click', () => {
             const content = editor.getValue();
@@ -112,36 +119,29 @@
             });
         });
 
-        // Load the saved note from Firebase on page load
-        window.addEventListener('load', () => {
-            get(ref(database, 'notes/' + noteId)).then((snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    editor.setValue(data.content || ''); // Set content in CodeMirror editor
-                } else {
-                    editor.setValue(''); // Clear editor if no data
+        // Set up real-time listener for updates
+        const noteRef = ref(database, 'notes/' + noteId);
+
+        // Fetch initial data and listen for changes
+        onValue(noteRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                const newContent = data.content || '';
+                if (editor.getValue() !== newContent) {
+                    editor.setValue(newContent); // Update CodeMirror editor with new content
                 }
-            }).catch((error) => {
-                console.error('Error loading note: ', error);
-            });
+            }
+        });
+
+        // Sync CodeMirror with textarea
+        editor.on('change', () => {
+            // Update the hidden textarea value (optional)
+            document.getElementById('code-editor').value = editor.getValue();
         });
     </script>
 
     <!-- Include CodeMirror library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
-    <script>
-        // Initialize CodeMirror editor
-        const editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
-            lineNumbers: true,
-            mode: 'javascript',
-            theme: 'default'
-        });
-
-        // Sync CodeMirror with textarea
-        editor.on('change', () => {
-            document.getElementById('code-editor').value = editor.getValue();
-        });
-    </script>
 </body>
 </html>
